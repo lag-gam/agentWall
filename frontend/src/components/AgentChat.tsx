@@ -1,0 +1,311 @@
+import { useState, useRef, useEffect } from 'react';
+import type { ChatMessage, SessionStatus } from '../types';
+
+interface AgentChatProps {
+  messages: ChatMessage[];
+  sessionStatus: SessionStatus | null;
+  stepping: boolean;
+  autoPlay: boolean;
+  scenarioComplete: boolean;
+  isAgentMode: boolean;
+  agentRunning: boolean;
+  onStep: () => void;
+  onSendMessage: (message: string) => void;
+  onToggleAutoPlay: () => void;
+  onStartAgent: (prompt: string) => void;
+}
+
+export function AgentChat({
+  messages,
+  sessionStatus,
+  stepping,
+  autoPlay,
+  scenarioComplete,
+  isAgentMode,
+  agentRunning,
+  onStep,
+  onSendMessage,
+  onToggleAutoPlay,
+  onStartAgent,
+}: AgentChatProps) {
+  const [input, setInput] = useState('');
+  const [promptInput, setPromptInput] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSend = () => {
+    if (!input.trim()) return;
+    onSendMessage(input.trim());
+    setInput('');
+  };
+
+  const handleStartAgent = () => {
+    if (!promptInput.trim()) return;
+    onStartAgent(promptInput.trim());
+    setPromptInput('');
+  };
+
+  const roleStyles: Record<string, { color: string; label: string; bg: string }> = {
+    agent: { color: '#93c5fd', label: 'Agent', bg: 'rgba(59, 130, 246, 0.1)' },
+    user: { color: '#a5b4fc', label: 'You', bg: 'rgba(139, 92, 246, 0.1)' },
+    system: { color: '#fbbf24', label: 'System', bg: 'rgba(245, 158, 11, 0.08)' },
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Header */}
+      <div style={{
+        padding: '12px 16px',
+        borderBottom: '1px solid #374151',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <h3 style={{ margin: 0, fontSize: '14px', color: '#e5e7eb' }}>Agent Activity</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {agentRunning && (
+            <span style={{
+              display: 'inline-block',
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              background: '#3b82f6',
+              animation: 'pulse 1.5s ease-in-out infinite',
+            }} />
+          )}
+          {sessionStatus && (
+            <span style={{
+              fontSize: '11px',
+              padding: '2px 8px',
+              borderRadius: '4px',
+              background: sessionStatus === 'paused' ? 'rgba(245, 158, 11, 0.2)' :
+                sessionStatus === 'completed' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+              color: sessionStatus === 'paused' ? '#fbbf24' :
+                sessionStatus === 'completed' ? '#22c55e' : '#93c5fd',
+            }}>
+              {isAgentMode && agentRunning ? 'AGENT RUNNING' : sessionStatus.toUpperCase()}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '12px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+      }}>
+        {messages.length === 0 && !sessionStatus && (
+          <div style={{ color: '#6b7280', textAlign: 'center', marginTop: '40px', fontSize: '13px' }}>
+            Type a prompt below or select a scripted scenario to begin.
+          </div>
+        )}
+        {messages.length === 0 && sessionStatus && !isAgentMode && (
+          <div style={{ color: '#6b7280', textAlign: 'center', marginTop: '40px', fontSize: '13px' }}>
+            Click "Next Step" to begin the scenario.
+          </div>
+        )}
+        {messages.map((msg, i) => {
+          const style = roleStyles[msg.role] || roleStyles.system;
+          return (
+            <div
+              key={i}
+              className="fade-slide-in"
+              style={{
+                background: style.bg,
+                borderRadius: '8px',
+                padding: '8px 12px',
+                borderLeft: `3px solid ${style.color}`,
+              }}
+            >
+              <div style={{ fontSize: '10px', color: style.color, fontWeight: 600, marginBottom: '4px' }}>
+                {style.label}
+              </div>
+              <div style={{
+                fontSize: '13px',
+                color: '#d1d5db',
+                lineHeight: '1.5',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+              }}>
+                {msg.content}
+              </div>
+            </div>
+          );
+        })}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Controls */}
+      <div style={{
+        padding: '12px',
+        borderTop: '1px solid #374151',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+      }}>
+        {/* Agent mode: prompt input when no session or session completed */}
+        {(!sessionStatus || (isAgentMode && scenarioComplete)) && (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              value={promptInput}
+              onChange={e => setPromptInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleStartAgent()}
+              placeholder="Tell the agent what to do..."
+              style={{
+                flex: 1,
+                padding: '10px 12px',
+                borderRadius: '6px',
+                border: '1px solid #374151',
+                background: '#111827',
+                color: '#e5e7eb',
+                fontSize: '13px',
+                outline: 'none',
+              }}
+            />
+            <button
+              onClick={handleStartAgent}
+              disabled={!promptInput.trim()}
+              style={{
+                padding: '10px 16px',
+                borderRadius: '6px',
+                border: 'none',
+                background: promptInput.trim() ? '#3b82f6' : '#374151',
+                color: 'white',
+                cursor: !promptInput.trim() ? 'not-allowed' : 'pointer',
+                fontSize: '13px',
+                fontWeight: 600,
+                opacity: promptInput.trim() ? 1 : 0.5,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Run Agent
+            </button>
+          </div>
+        )}
+
+        {/* Agent mode running: stop button + message input */}
+        {isAgentMode && sessionStatus && !scenarioComplete && (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSend()}
+              placeholder='Type "stop" to pause agent...'
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #374151',
+                background: '#111827',
+                color: '#e5e7eb',
+                fontSize: '13px',
+                outline: 'none',
+              }}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim()}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: 'none',
+                background: '#4b5563',
+                color: 'white',
+                cursor: !input.trim() ? 'not-allowed' : 'pointer',
+                fontSize: '13px',
+                opacity: input.trim() ? 1 : 0.5,
+              }}
+            >
+              Send
+            </button>
+          </div>
+        )}
+
+        {/* Scripted mode: step controls */}
+        {!isAgentMode && sessionStatus && (
+          <>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={onStep}
+                disabled={stepping || scenarioComplete}
+                style={{
+                  flex: 1,
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: stepping ? '#374151' : '#3b82f6',
+                  color: 'white',
+                  cursor: stepping || scenarioComplete ? 'not-allowed' : 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  opacity: (stepping || scenarioComplete) ? 0.5 : 1,
+                }}
+              >
+                {stepping ? 'Processing...' : scenarioComplete ? 'Complete' : 'Next Step'}
+              </button>
+              <button
+                onClick={onToggleAutoPlay}
+                disabled={scenarioComplete}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: autoPlay ? '1px solid #f59e0b' : '1px solid #374151',
+                  background: autoPlay ? 'rgba(245, 158, 11, 0.15)' : '#1f2937',
+                  color: autoPlay ? '#fbbf24' : '#9ca3af',
+                  cursor: scenarioComplete ? 'not-allowed' : 'pointer',
+                  fontSize: '12px',
+                  opacity: scenarioComplete ? 0.5 : 1,
+                }}
+              >
+                {autoPlay ? 'Stop Auto' : 'Auto Play'}
+              </button>
+            </div>
+
+            {/* User message input for scripted mode */}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSend()}
+                placeholder='Type "stop" to pause agent...'
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #374151',
+                  background: '#111827',
+                  color: '#e5e7eb',
+                  fontSize: '13px',
+                  outline: 'none',
+                }}
+              />
+              <button
+                onClick={handleSend}
+                disabled={!input.trim()}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: '#4b5563',
+                  color: 'white',
+                  cursor: !input.trim() ? 'not-allowed' : 'pointer',
+                  fontSize: '13px',
+                  opacity: input.trim() ? 1 : 0.5,
+                }}
+              >
+                Send
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

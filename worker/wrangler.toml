@@ -1,0 +1,20 @@
+name = "agentfence-worker"
+main = "src/index.ts"
+compatibility_date = "2024-06-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "agentfence-db"
+database_id = "local"
+
+[durable_objects]
+bindings = [
+  { name = "SESSION_STREAM", class_name = "SessionStream" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["SessionStream"]
+
+[vars]
+AGENT_SERVER_URL = "http://localhost:3001"
