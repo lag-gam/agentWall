@@ -3,6 +3,7 @@
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Animated, StaggerContainer, StaggerChild } from "./AnimatedSection";
+import { TiltCard } from "./TiltCard";
 
 function Counter({
   target,
@@ -89,32 +90,34 @@ export function Metrics() {
           </p>
         </Animated>
 
-        {/* Stat cards */}
+        {/* Stat cards with tilt */}
         <StaggerContainer className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-14">
           {STATS.map((s) => (
             <StaggerChild key={s.label}>
-              <div className="rounded-2xl border border-[#e5e5e5] bg-white p-6 text-center transition-all hover:border-[#d4d4d4] hover:shadow-[0_2px_20px_rgba(0,0,0,0.04)]">
-                <div
-                  className="text-3xl font-semibold tracking-tight mb-1"
-                  style={{ color: s.color }}
-                >
-                  <Counter
-                    target={s.value}
-                    suffix={s.suffix || ""}
-                    prefix={s.prefix || ""}
-                  />
+              <TiltCard>
+                <div className="rounded-2xl border border-[#e5e5e5] bg-white p-6 text-center transition-all hover:border-[#d4d4d4] hover:shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
+                  <div
+                    className="text-3xl font-semibold tracking-tight mb-1"
+                    style={{ color: s.color }}
+                  >
+                    <Counter
+                      target={s.value}
+                      suffix={s.suffix || ""}
+                      prefix={s.prefix || ""}
+                    />
+                  </div>
+                  <div className="text-[13px] font-medium text-[#0a0a0a]">
+                    {s.label}
+                  </div>
                 </div>
-                <div className="text-[13px] font-medium text-[#0a0a0a]">
-                  {s.label}
-                </div>
-              </div>
+              </TiltCard>
             </StaggerChild>
           ))}
         </StaggerContainer>
 
         {/* Timeline */}
         <Animated delay={0.1}>
-          <div className="rounded-2xl border border-[#e5e5e5] bg-white overflow-hidden">
+          <div className="rounded-2xl border border-[#e5e5e5] bg-white overflow-hidden transition-shadow hover:shadow-[0_4px_30px_rgba(0,0,0,0.05)]">
             <div className="border-b border-[#e5e5e5] bg-[#fafafa] px-6 py-4">
               <h3 className="text-[14px] font-semibold text-[#0a0a0a]">
                 Sample Decision Timeline
@@ -130,7 +133,7 @@ export function Metrics() {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.08 + 0.2 }}
-                    className="flex items-center gap-4 px-6 py-3.5"
+                    className="flex items-center gap-4 px-6 py-3.5 transition-colors hover:bg-[#fafafa]"
                   >
                     {/* Risk number */}
                     <span className="w-8 text-right text-[13px] font-mono font-semibold text-[#0a0a0a]">

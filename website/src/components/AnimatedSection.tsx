@@ -1,7 +1,7 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
-import { ReactNode } from "react";
+import { motion, type Variants, useScroll, useTransform } from "framer-motion";
+import { ReactNode, useRef } from "react";
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 32 },
@@ -88,5 +88,83 @@ export function StaggerChild({
     >
       {children}
     </motion.div>
+  );
+}
+
+/** Word-by-word text reveal */
+export function TextReveal({
+  text,
+  className = "",
+  delay = 0,
+}: {
+  text: string;
+  className?: string;
+  delay?: number;
+}) {
+  const words = text.split(" ");
+  return (
+    <motion.span
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-40px" }}
+      className={className}
+    >
+      {words.map((word, i) => (
+        <motion.span
+          key={i}
+          variants={{
+            hidden: { opacity: 0, y: 12, filter: "blur(4px)" },
+            visible: { opacity: 1, y: 0, filter: "blur(0px)" },
+          }}
+          transition={{
+            duration: 0.4,
+            delay: delay + i * 0.04,
+            ease: [0.25, 0.1, 0.25, 1],
+          }}
+          className="inline-block mr-[0.3em]"
+        >
+          {word}
+        </motion.span>
+      ))}
+    </motion.span>
+  );
+}
+
+/** Parallax wrapper — shifts children based on scroll */
+export function Parallax({
+  children,
+  className = "",
+  speed = 0.2,
+}: {
+  children: ReactNode;
+  className?: string;
+  speed?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
+  const y = useTransform(scrollYProgress, [0, 1], [speed * 100, speed * -100]);
+
+  return (
+    <motion.div ref={ref} style={{ y }} className={className}>
+      {children}
+    </motion.div>
+  );
+}
+
+/** Horizontal line that animates width on scroll */
+export function AnimatedDivider({ className = "" }: { className?: string }) {
+  return (
+    <div className={`flex justify-center ${className}`}>
+      <motion.div
+        initial={{ width: 0, opacity: 0 }}
+        whileInView={{ width: 80, opacity: 1 }}
+        viewport={{ once: true, margin: "-20px" }}
+        transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+        className="h-[1px] bg-[#e5e5e5]"
+      />
+    </div>
   );
 }

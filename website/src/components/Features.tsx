@@ -1,11 +1,12 @@
 "use client";
 
 import { Animated, StaggerContainer, StaggerChild } from "./AnimatedSection";
+import { TiltCard } from "./TiltCard";
 
 const FEATURES = [
   {
     title: "Composite Risk Scoring",
-    desc: "Every tool call evaluated against 6 rules. Each contributes a weighted score (0–100) that drives ALLOW, BLOCK, or REQUIRE_APPROVAL decisions.",
+    desc: "Every tool call evaluated against 6 rules. Each contributes a weighted score (0-100) that drives ALLOW, BLOCK, or REQUIRE_APPROVAL decisions.",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 20V10" /><path d="M18 20V4" /><path d="M6 20v-4" /></svg>
     ),
@@ -64,17 +65,19 @@ export function Features() {
         <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {FEATURES.map((f) => (
             <StaggerChild key={f.title}>
-              <div className="group rounded-2xl border border-[#e5e5e5] bg-white p-7 transition-all hover:border-[#d4d4d4] hover:shadow-[0_2px_20px_rgba(0,0,0,0.04)]">
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-[#e5e5e5] bg-[#fafafa] text-[#737373] transition-colors group-hover:border-[#16a34a]/20 group-hover:bg-[#dcfce7] group-hover:text-[#16a34a]">
-                  {f.icon}
+              <TiltCard>
+                <div className="group rounded-2xl border border-[#e5e5e5] bg-white p-7 transition-all hover:border-[#d4d4d4] hover:shadow-[0_4px_24px_rgba(0,0,0,0.06)] h-full">
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-[#e5e5e5] bg-[#fafafa] text-[#737373] transition-colors group-hover:border-[#16a34a]/20 group-hover:bg-[#dcfce7] group-hover:text-[#16a34a]">
+                    {f.icon}
+                  </div>
+                  <h3 className="text-[15px] font-semibold text-[#0a0a0a] mb-2">
+                    {f.title}
+                  </h3>
+                  <p className="text-[13px] leading-relaxed text-[#737373]">
+                    {f.desc}
+                  </p>
                 </div>
-                <h3 className="text-[15px] font-semibold text-[#0a0a0a] mb-2">
-                  {f.title}
-                </h3>
-                <p className="text-[13px] leading-relaxed text-[#737373]">
-                  {f.desc}
-                </p>
-              </div>
+              </TiltCard>
             </StaggerChild>
           ))}
         </StaggerContainer>
