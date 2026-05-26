@@ -117,4 +117,4 @@ The frontend runs on `http://localhost:5173`, the worker on `http://localhost:87
 
 ## Course
 
-Built for CS 153 @ Harvard.
+Built for CS 153 @ Stanford (AI COACHELLA).

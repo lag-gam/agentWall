@@ -28,7 +28,7 @@ export function Footer() {
           <a href="#docs" className="hover:text-[#9ca3af] transition-colors">Docs</a>
           <a href="#contact" className="hover:text-[#9ca3af] transition-colors">Contact</a>
           <span className="text-[#374151]">|</span>
-          <span>Built for CS153 at Harvard</span>
+          <span>Built for CS 153 @ Stanford (AI COACHELLA)</span>
         </div>
 
         <div className="text-xs text-[#374151]">
