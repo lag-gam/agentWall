@@ -2,7 +2,7 @@
 
 import type { Session, SessionRow } from '../types';
 
-function rowToSession(row: SessionRow): Session {
+export function rowToSession(row: SessionRow): Session {
   return {
     id: row.id,
     scenarioId: row.scenario_id,

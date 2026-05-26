@@ -1,11 +1,12 @@
 {
-  "name": "agentfence",
+  "name": "palisade",
   "private": true,
-  "workspaces": ["frontend", "worker", "agent-server"],
+  "workspaces": ["frontend", "worker", "agent-server", "packages/openclaw-plugin"],
   "scripts": {
     "dev": "concurrently \"npm run dev -w worker\" \"npm run dev -w frontend\" \"npm run dev -w agent-server\"",
     "dev:no-agent": "concurrently \"npm run dev -w worker\" \"npm run dev -w frontend\"",
-    "build": "npm run build -w worker && npm run build -w frontend"
+    "build": "npm run build -w worker && npm run build -w frontend",
+    "build:plugin": "npm run build -w palisade-openclaw"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

@@ -1,12 +1,12 @@
-// AgentFence Worker — Hono API + Durable Object export
+// Palisade Worker — Hono API + Durable Object export
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import type { Env, ToolCall, ToolCallRow, ChatMessage, WSEvent, ScenarioStep, Decision } from './types';
+import type { Env, ToolCall, ToolCallRow, ChatMessage, WSEvent, ScenarioStep, Decision, SessionRow } from './types';
 import { evaluatePolicy } from './policy/engine';
 import { checkFileName } from './policy/sensitive-data';
 import { listScenarios, getScenario } from './scenarios/index';
-import { createSession, getSession, updateSession } from './session/manager';
+import { createSession, getSession, updateSession, rowToSession } from './session/manager';
 import { detectIntent } from './session/stop-detection';
 import { executeTool } from './tools/executor';
 
@@ -30,9 +30,44 @@ app.get('/api/scenarios', (c) => {
   return c.json(scenarios);
 });
 
-// POST /api/sessions — create a new session (scripted or agent mode)
+// GET /api/sessions — list sessions (optionally filtered by source)
+app.get('/api/sessions', async (c) => {
+  const source = c.req.query('source');
+  let rows: SessionRow[];
+  if (source === 'external') {
+    const result = await c.env.DB.prepare(
+      "SELECT * FROM sessions WHERE scenario_id LIKE 'external:%' ORDER BY created_at DESC LIMIT 50"
+    ).all<SessionRow>();
+    rows = result.results || [];
+  } else {
+    const result = await c.env.DB.prepare(
+      'SELECT * FROM sessions ORDER BY created_at DESC LIMIT 50'
+    ).all<SessionRow>();
+    rows = result.results || [];
+  }
+
+  // Include tool call counts
+  const sessions = await Promise.all(rows.map(async (row) => {
+    const session = rowToSession(row);
+    const countResult = await c.env.DB.prepare(
+      'SELECT COUNT(*) as count FROM tool_calls WHERE session_id = ?'
+    ).bind(row.id).first<{ count: number }>();
+    return { ...session, toolCallCount: countResult?.count ?? 0 };
+  }));
+
+  return c.json(sessions);
+});
+
+// POST /api/sessions — create a new session (scripted, agent, or external mode)
 app.post('/api/sessions', async (c) => {
-  const body = await c.req.json<{ scenarioId?: string; prompt?: string }>();
+  const body = await c.req.json<{ scenarioId?: string; prompt?: string; source?: string }>();
+
+  // External agent mode: external agent (OpenClaw, Hermes, etc.) creating a session
+  if (body.source) {
+    const session = await createSession(c.env.DB, `external:${body.source}`);
+    // Do NOT fire-and-forget to agent-server — external agent handles its own execution
+    return c.json(session, 201);
+  }
 
   // Agent mode: user typed a free-form prompt
   if (body.prompt) {
@@ -64,7 +99,7 @@ app.post('/api/sessions', async (c) => {
 
   // Scripted mode: existing behavior
   if (!body.scenarioId) {
-    return c.json({ error: 'Provide scenarioId or prompt' }, 400);
+    return c.json({ error: 'Provide scenarioId, prompt, or source' }, 400);
   }
   const scenario = getScenario(body.scenarioId);
   if (!scenario) {
@@ -374,6 +409,33 @@ app.post('/api/sessions/:id/approve/:toolCallId', async (c) => {
   ).bind(toolCallId, sessionId).run();
 
   return c.json({ approved: true, toolCallId });
+});
+
+// GET /api/sessions/:id/approval-status/:toolCallId — check approval status (polled by external plugins)
+app.get('/api/sessions/:id/approval-status/:toolCallId', async (c) => {
+  const sessionId = c.req.param('id');
+  const toolCallId = c.req.param('toolCallId');
+
+  const row = await c.env.DB.prepare(
+    'SELECT decision FROM tool_calls WHERE id = ? AND session_id = ?'
+  ).bind(toolCallId, sessionId).first<{ decision: string }>();
+
+  if (!row) return c.json({ error: 'Tool call not found' }, 404);
+
+  // Check if this tool call was approved (decision changed from REQUIRE_APPROVAL to ALLOW)
+  const session = await getSession(c.env.DB, sessionId);
+  const isApproved = session?.approvalsGranted.includes(toolCallId);
+
+  let status: 'pending' | 'approved' | 'denied';
+  if (isApproved || row.decision === 'ALLOW') {
+    status = 'approved';
+  } else if (row.decision === 'BLOCK') {
+    status = 'denied';
+  } else {
+    status = 'pending';
+  }
+
+  return c.json({ status });
 });
 
 // GET /api/sessions/:id/history — full tool call log

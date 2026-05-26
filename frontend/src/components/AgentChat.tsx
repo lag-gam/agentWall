@@ -8,6 +8,8 @@ interface AgentChatProps {
   autoPlay: boolean;
   scenarioComplete: boolean;
   isAgentMode: boolean;
+  isExternalMode: boolean;
+  externalSource: string | null;
   agentRunning: boolean;
   onStep: () => void;
   onSendMessage: (message: string) => void;
@@ -22,6 +24,8 @@ export function AgentChat({
   autoPlay,
   scenarioComplete,
   isAgentMode,
+  isExternalMode,
+  externalSource,
   agentRunning,
   onStep,
   onSendMessage,
@@ -86,11 +90,38 @@ export function AgentChat({
               color: sessionStatus === 'paused' ? '#fbbf24' :
                 sessionStatus === 'completed' ? '#22c55e' : '#93c5fd',
             }}>
-              {isAgentMode && agentRunning ? 'AGENT RUNNING' : sessionStatus.toUpperCase()}
+              {isExternalMode && agentRunning ? 'EXTERNAL AGENT' : isAgentMode && agentRunning ? 'AGENT RUNNING' : sessionStatus.toUpperCase()}
             </span>
           )}
         </div>
       </div>
+
+      {/* External agent banner */}
+      {isExternalMode && (
+        <div style={{
+          padding: '8px 16px',
+          background: 'rgba(34, 197, 94, 0.08)',
+          borderBottom: '1px solid rgba(34, 197, 94, 0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontSize: '12px',
+          color: '#86efac',
+        }}>
+          <span style={{
+            padding: '2px 6px',
+            borderRadius: '3px',
+            background: 'rgba(34, 197, 94, 0.2)',
+            color: '#22c55e',
+            fontSize: '10px',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+          }}>
+            {externalSource || 'external'}
+          </span>
+          Connected to external agent — tool calls stream here in real-time
+        </div>
+      )}
 
       {/* Messages */}
       <div style={{
@@ -106,7 +137,12 @@ export function AgentChat({
             Type a prompt below or select a scripted scenario to begin.
           </div>
         )}
-        {messages.length === 0 && sessionStatus && !isAgentMode && (
+        {messages.length === 0 && sessionStatus && isExternalMode && (
+          <div style={{ color: '#6b7280', textAlign: 'center', marginTop: '40px', fontSize: '13px' }}>
+            Waiting for tool calls from external agent...
+          </div>
+        )}
+        {messages.length === 0 && sessionStatus && !isAgentMode && !isExternalMode && (
           <div style={{ color: '#6b7280', textAlign: 'center', marginTop: '40px', fontSize: '13px' }}>
             Click "Next Step" to begin the scenario.
           </div>
@@ -150,8 +186,46 @@ export function AgentChat({
         flexDirection: 'column',
         gap: '8px',
       }}>
+        {/* External mode: stop/resume controls */}
+        {isExternalMode && sessionStatus && !scenarioComplete && (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSend()}
+              placeholder='Type "stop" to pause, "resume" to continue...'
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #374151',
+                background: '#111827',
+                color: '#e5e7eb',
+                fontSize: '13px',
+                outline: 'none',
+              }}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim()}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: 'none',
+                background: '#4b5563',
+                color: 'white',
+                cursor: !input.trim() ? 'not-allowed' : 'pointer',
+                fontSize: '13px',
+                opacity: input.trim() ? 1 : 0.5,
+              }}
+            >
+              Send
+            </button>
+          </div>
+        )}
+
         {/* Agent mode: prompt input when no session or session completed */}
-        {(!sessionStatus || (isAgentMode && scenarioComplete)) && (
+        {!isExternalMode && (!sessionStatus || (isAgentMode && scenarioComplete)) && (
           <div style={{ display: 'flex', gap: '8px' }}>
             <input
               value={promptInput}

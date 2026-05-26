@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import type { Session, ToolCall, ChatMessage, ScenarioSummary, WSEvent } from '../types';
+import type { Session, ToolCall, ChatMessage, ScenarioSummary, ExternalSession, WSEvent } from '../types';
 import { useWebSocket } from './useWebSocket';
 
 const API = '/api';
@@ -8,6 +8,7 @@ interface SessionState {
   session: Session | null;
   toolCalls: ToolCall[];
   scenarios: ScenarioSummary[];
+  externalSessions: ExternalSession[];
   selectedToolCall: ToolCall | null;
   stepping: boolean;
   autoPlay: boolean;
@@ -19,6 +20,7 @@ export function useSession() {
     session: null,
     toolCalls: [],
     scenarios: [],
+    externalSessions: [],
     selectedToolCall: null,
     stepping: false,
     autoPlay: false,
@@ -72,6 +74,49 @@ export function useSession() {
       setState(prev => ({ ...prev, scenarios: data }));
     } catch (err) {
       setState(prev => ({ ...prev, error: 'Failed to fetch scenarios' }));
+    }
+  }, []);
+
+  const fetchExternalSessions = useCallback(async () => {
+    try {
+      const res = await fetch(`${API}/sessions?source=external`);
+      const data = await res.json() as ExternalSession[];
+      setState(prev => ({ ...prev, externalSessions: data }));
+    } catch {
+      // Non-critical — don't overwrite existing error
+    }
+  }, []);
+
+  const connectToExternalSession = useCallback(async (sessionId: string) => {
+    try {
+      autoPlayRef.current = false;
+      if (autoPlayTimerRef.current) {
+        clearTimeout(autoPlayTimerRef.current);
+        autoPlayTimerRef.current = null;
+      }
+
+      // Fetch the existing session
+      const sessionRes = await fetch(`${API}/sessions/${sessionId}`);
+      if (!sessionRes.ok) throw new Error('Session not found');
+      const session = await sessionRes.json() as Session;
+
+      // Fetch existing tool call history
+      const historyRes = await fetch(`${API}/sessions/${sessionId}/history`);
+      const toolCalls = historyRes.ok
+        ? await historyRes.json() as ToolCall[]
+        : [];
+
+      setState(prev => ({
+        ...prev,
+        session,
+        toolCalls,
+        selectedToolCall: toolCalls.length > 0 ? toolCalls[toolCalls.length - 1] : null,
+        stepping: false,
+        autoPlay: false,
+        error: null,
+      }));
+    } catch (err) {
+      setState(prev => ({ ...prev, error: 'Failed to connect to external session' }));
     }
   }, []);
 
@@ -247,13 +292,23 @@ export function useSession() {
   }, [step]);
 
   const isAgentMode = state.session?.scenarioId === 'agent';
-  const agentRunning = isAgentMode && state.session?.status === 'active';
+  const isExternalMode = state.session?.scenarioId?.startsWith('external:') ?? false;
+  const agentRunning = (isAgentMode || isExternalMode) && state.session?.status === 'active';
+
+  // Extract the external source name from scenarioId (e.g., "external:openclaw" → "openclaw")
+  const externalSource = isExternalMode
+    ? state.session!.scenarioId.replace('external:', '')
+    : null;
 
   return {
     ...state,
     isAgentMode,
+    isExternalMode,
+    externalSource,
     agentRunning,
     fetchScenarios,
+    fetchExternalSessions,
+    connectToExternalSession,
     createSession,
     startAgent,
     step,

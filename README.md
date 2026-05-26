@@ -114,3 +114,7 @@ The frontend runs on `http://localhost:5173`, the worker on `http://localhost:87
 - **Policy configuration UI** — Let users adjust risk thresholds and toggle rules from the frontend
 - **Session replay** — Review everything an agent did after the fact with a full audit trail export
 - **Benchmarking** — Test the guardrail system against real-world examples of agents going wrong to measure how well it catches what matters
+
+## Course
+
+Built for CS 153 @ Harvard.

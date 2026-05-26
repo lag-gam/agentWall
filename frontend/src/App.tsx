@@ -11,13 +11,18 @@ export default function App() {
     session,
     toolCalls,
     scenarios,
+    externalSessions,
     selectedToolCall,
     stepping,
     autoPlay,
     error,
     isAgentMode,
+    isExternalMode,
+    externalSource,
     agentRunning,
     fetchScenarios,
+    fetchExternalSessions,
+    connectToExternalSession,
     createSession,
     startAgent,
     step,
@@ -38,9 +43,9 @@ export default function App() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span style={{ fontSize: '20px' }}>&#x1f6e1;</span>
-          <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>AgentFence</h1>
+          <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Palisade</h1>
           <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '4px' }}>
-            Runtime Guardrails for AI Agents
+            Runtime Intelligence for AI Agents
           </span>
         </div>
         {error && (
@@ -49,9 +54,13 @@ export default function App() {
       </div>
       <ScenarioSelector
         scenarios={scenarios}
+        externalSessions={externalSessions}
         activeScenarioId={session?.scenarioId ?? null}
+        activeSessionId={session?.id ?? null}
         onSelect={createSession}
         onStartAgent={startAgent}
+        onConnectExternal={connectToExternalSession}
+        onRefreshExternal={fetchExternalSessions}
       />
     </div>
   );
@@ -67,6 +76,8 @@ export default function App() {
           autoPlay={autoPlay}
           scenarioComplete={scenarioComplete ?? false}
           isAgentMode={isAgentMode}
+          isExternalMode={isExternalMode}
+          externalSource={externalSource}
           agentRunning={agentRunning}
           onStep={step}
           onSendMessage={sendMessage}

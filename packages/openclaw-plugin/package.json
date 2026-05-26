@@ -1,0 +1,25 @@
+{
+  "name": "palisade-openclaw",
+  "version": "0.1.0",
+  "description": "Palisade runtime guardrails plugin for OpenClaw",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "palisade",
+    "openclaw",
+    "ai-safety",
+    "guardrails",
+    "runtime-security"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

@@ -52,6 +52,10 @@ export interface ScenarioSummary {
   stepCount: number;
 }
 
+export interface ExternalSession extends Session {
+  toolCallCount: number;
+}
+
 export type WSEvent =
   | { type: 'tool_call'; data: ToolCall }
   | { type: 'chat_message'; data: ChatMessage }
